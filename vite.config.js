@@ -1,0 +1,11 @@
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite';
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [vue(),tailwindcss()],
+  server: {
+    port: 8080, // 自己规定的端口号
+  },
+})
