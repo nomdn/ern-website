@@ -3,6 +3,7 @@ import { ElButton,ElMenu, ElMenuItem } from 'element-plus';
 import { el } from 'element-plus/es/locales.mjs';
 import { ref } from 'vue'
 import { reactive } from 'vue';
+import Giscus from '@giscus/vue';
 import 'element-plus/dist/index.css'
 </script>
 <template>
@@ -20,6 +21,26 @@ import 'element-plus/dist/index.css'
 </ElMenu>
 
 <router-view></router-view>
+    <div style="width: 50%;    
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin: auto;">
+    <giscus
+        repo="nomdn/ern-website"
+        repoId="R_kgDOQfL_MA"
+        category="General"
+        categoryId="DIC_kwDOQfL_MM4CzLue"
+        mapping="pathname"
+        strict="0"
+        reactionsEnabled="1"
+        emitMetadata="0"
+        inputPosition="top"
+        theme="light"
+        lang="zh-CN"
+        crossorigin="anonymous"
+    ></giscus>
+    </div>
 </template>
 <style scoped>
 .el-menu--horizontal > .el-menu-item:nth-child(1) {

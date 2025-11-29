@@ -90,5 +90,6 @@ function pushtodownload(){
     </div>
 
 </template>
+
 <style scoped src="../style.css">
 </style>
