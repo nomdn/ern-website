@@ -18,6 +18,7 @@ import 'element-plus/dist/index.css'
     </ElMenuItem>
     <ElMenuItem index="/">主页</ElMenuItem>
     <ElMenuItem index="/download">下载</ElMenuItem>
+    <ElMenuItem index="/stalk">视奸我</ElMenuItem>
 </ElMenu>
 
 <router-view></router-view>
