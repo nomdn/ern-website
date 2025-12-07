@@ -1,30 +1,24 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import {
-  ElCard,
-  ElTable,
-  ElTableColumn
-} from 'element-plus'
+import { ElCard, ElTable, ElTableColumn } from 'element-plus'
+import { el } from 'element-plus/es/locales.mjs'
 
-// === PC 数据 ===
-const pcData = ref({
-  cpu_info: {},
-  mem_info: {},
-  pc_info: {},
-  running_window: {}
-})
+// === 配置：支持多个 PC 和多个服务器 ===
+const pcs = [
+  { id: 'pc', name: '我的电脑' }
+]
 
-// === 多服务器配置 ===
 const servers = [
   { id: 'ubuntu', name: 'Ubuntu 服务器' },
   { id: 'debian13', name: 'Debian 13 服务器' }
 ]
 
-// 每台服务器的数据：{ ubuntu: {...}, debian13: {...} }
-const serverDataMap = ref({})
+// === 数据存储 ===
+const pcDataMap = ref({})     // { pc: { ... } }
+const serverDataMap = ref({}) // { ubuntu: { ... }, debian13: { ... } }
 
-// 工具函数
+// === 工具函数 ===
 const formatGB = (value) => {
   if (value == null || isNaN(value)) return '未知'
   return `${Number(value).toFixed(2)} GB`
@@ -35,26 +29,30 @@ const formatPercent = (value) => {
   return `${Number(value).toFixed(1)}%`
 }
 
-// 获取 PC 信息
-const fetchPCInfo = async () => {
+// === 获取 PC 信息（type=pc）===
+const fetchPCInfo = async (pcId) => {
   try {
-    const res = await axios.get('https://api.wsmdn.top/get?type=pc&id=pc')
-    pcData.value = res.data
+    const res = await axios.get(`https://api.wsmdn.top/get?type=pc&id=${pcId}`)
+    pcDataMap.value[pcId] = res.data
   } catch (error) {
-    console.error('获取 PC 信息失败:', error)
+    console.error(`获取 PC (${pcId}) 信息失败:`, error)
+    pcDataMap.value[pcId] = {
+      cpu_info: {},
+      mem_info: {},
+      pc_info: {},
+      running_window: {},
+      clipboard: ""
+    }
   }
 }
 
-// 获取单个服务器信息
+// === 获取服务器信息（type=server）===
 const fetchServerInfo = async (serverId) => {
   try {
-    const res = await axios.get(
-      `https://api.wsmdn.top/get?type=server&id=${serverId}`
-    )
+    const res = await axios.get(`https://api.wsmdn.top/get?type=server&id=${serverId}`)
     serverDataMap.value[serverId] = res.data
   } catch (error) {
-    console.error(`获取 ${serverId} 服务器信息失败:`, error)
-    // 初始化空结构，避免模板报错
+    console.error(`获取服务器 (${serverId}) 信息失败:`, error)
     serverDataMap.value[serverId] = {
       system_info: {},
       cpu_info: {},
@@ -65,48 +63,78 @@ const fetchServerInfo = async (serverId) => {
   }
 }
 
-// 初始化：加载所有设备数据
+// === 初始化所有设备 ===
 onMounted(() => {
-  fetchPCInfo()
+  pcs.forEach(pc => fetchPCInfo(pc.id))
   servers.forEach(server => fetchServerInfo(server.id))
 })
+const cooldown = ref(5);
+setInterval(() => {
+  if (cooldown.value > 0) {
+    cooldown.value -= 1;
+
+  }else if (cooldown.value === 0) {
+      cooldown.value = 20;
+      pcs.forEach(pc => fetchPCInfo(pc.id))
+      servers.forEach(server => fetchServerInfo(server.id))
+      console.log('已更新设备信息');
+  }
+      
+  }, 1000);
+  
 </script>
 
 <template>
   <div class="container">
-    <!-- PC 卡片 -->
-    <el-card class="system-info-card" shadow="hover">
+    <!-- 渲染所有 PC -->
+    <el-card  
+      class="system-info-card"
+      shadow="hover">
+      <h4>距离下次数据更新还有{{ cooldown }}</h4>
+    </el-card>
+    <el-card
+    
+      v-for="pc in pcs"
+      :key="pc.id"
+      class="system-info-card"
+      shadow="hover"
+      
+    >
       <template #header>
-        <div class="card-header">🖥️ 我的电脑（未知就是没开机）</div>
+        <div class="card-header">🖥️ {{ pc.name }}（未知就是没开机）</div>
       </template>
 
       <div class="info-section">
         <h4>CPU 信息</h4>
-        <p><strong>核心数：</strong>{{ pcData.cpu_info?.cores || '未知' }}</p>
+        <p><strong>核心数：</strong>{{ pcDataMap[pc.id]?.cpu_info?.cores || '未知' }}</p>
       </div>
 
       <div class="info-section">
         <h4>内存信息</h4>
-        <p><strong>总内存：</strong>{{ formatGB(pcData.mem_info?.all) }}</p>
-        <p><strong>已用内存：</strong>{{ formatGB(pcData.mem_info?.used) }}</p>
-        <p><strong>空闲内存：</strong>{{ formatGB(pcData.mem_info?.free) }}</p>
+        <p><strong>总内存：</strong>{{ formatGB(pcDataMap[pc.id]?.mem_info?.all) }}</p>
+        <p><strong>已用内存：</strong>{{ formatGB(pcDataMap[pc.id]?.mem_info?.used) }}</p>
+        <p><strong>空闲内存：</strong>{{ formatGB(pcDataMap[pc.id]?.mem_info?.free) }}</p>
       </div>
 
       <div class="info-section">
         <h4>PC 信息</h4>
-        <p><strong>操作系统：</strong>{{ pcData.pc_info?.system || '未知' }}</p>
-        <p><strong>系统版本：</strong>{{ pcData.pc_info?.version || '未知' }}</p>
+        <p><strong>操作系统：</strong>{{ pcDataMap[pc.id]?.pc_info?.system || '未知' }}</p>
+        <p><strong>系统版本：</strong>{{ pcDataMap[pc.id]?.pc_info?.version || '未知' }}</p>
       </div>
 
-      <div class="info-section">
+      <div class="info-section" v-if="pcDataMap[pc.id]?.running_window !== undefined">
         <h4>当前活动窗口</h4>
-        <p><strong>进程名：</strong>{{ pcData.running_window?.name || '无' }}</p>
-        <p><strong>窗口标题：</strong>{{ pcData.running_window?.title || '无' }}</p>
-        <p><strong>程序路径：</strong>{{ pcData.running_window?.path || '无' }}</p>
+        <p><strong>进程名：</strong>{{ pcDataMap[pc.id]?.running_window?.name || '无' }}</p>
+        <p><strong>窗口标题：</strong>{{ pcDataMap[pc.id]?.running_window?.title || '无' }}</p>
+        <p><strong>程序路径：</strong>{{ pcDataMap[pc.id]?.running_window?.path || '无' }}</p>
+      </div>
+      <div class="info-section" v-if="pcDataMap[pc.id]?.clipboard !== undefined">
+        <h4>剪贴板内容</h4>
+        <p>{{ pcDataMap[pc.id]?.clipboard || '无' }}</p>
       </div>
     </el-card>
 
-    <!-- 动态渲染每台 Linux 服务器 -->
+    <!-- 渲染所有 Linux 服务器 -->
     <el-card
       v-for="server in servers"
       :key="server.id"
@@ -179,6 +207,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* 你的样式保持不变 */
 .container {
   padding: 20px;
   max-width: 750px;
